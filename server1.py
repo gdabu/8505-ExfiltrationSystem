@@ -14,10 +14,11 @@
 ##  DATE:           October 17, 2015
 ##
 ##################################################################################
-import sys, os, argparse, socket, subprocess, logging, time, subprocess, setproctitle, threading, pyinotify
+import sys, os, argparse, socket, subprocess, logging, time, subprocess, setproctitle, threading, pyinotify, string
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 from AesEncryption import *
+
 
 ##################################################################################
 ##  FUNCTION
@@ -34,17 +35,9 @@ def executeShellCommand(command):
     return outputString
 
 
-
-
-def onChange(ev):
-    cmd = ['/bin/echo', 'File', ev.pathname, 'changed']
-    subprocess.Popen(cmd).communicate()
-    # with open("/root/Documents/C8505/Final Project/pyinotify/3.png", 'r') as f:
-    #     data = f.read()
-    # f.close()
-    # send_to_client(data)
-    print "sent changed data"
-    return
+def get_filename(path):
+    i = path.rfind('/')
+    return path[i+1:]
 
 
 wm = pyinotify.WatchManager()
@@ -55,15 +48,11 @@ mask = pyinotify.IN_CLOSE_WRITE
 class EventHandler(pyinotify.ProcessEvent):
 
     def process_IN_CLOSE_WRITE(self, event):
-        print event.pathname
+        filename = get_filename(event.pathname)
+        print filename
         print "file modified"
 
 def watch_file(directory):
-    # print "watch:", directory 
-    # wm = pyinotify.WatchManager()
-    # wm.add_watch(directory, pyinotify.IN_CLOSE_WRITE, onChange)
-    # notifier = pyinotify.Notifier(wm)
-    # notifier.loop()
 
     handler = EventHandler()
     notifier = pyinotify.Notifier(wm, handler)
