@@ -47,12 +47,27 @@ def onChange(ev):
     return
 
 
+wm = pyinotify.WatchManager()
+mask = pyinotify.IN_CLOSE_WRITE
+# wdd = wm.add_watch('/tmp', mask, rec=True)
+
+# Event Handler. We will fill it later
+class EventHandler(pyinotify.ProcessEvent):
+
+    def process_IN_CLOSE_WRITE(self, event):
+        print event.pathname
+        print "file modified"
 
 def watch_file(directory):
-    print "watch:", directory 
-    wm = pyinotify.WatchManager()
-    wm.add_watch(directory, pyinotify.IN_CLOSE_WRITE, onChange)
-    notifier = pyinotify.Notifier(wm)
+    # print "watch:", directory 
+    # wm = pyinotify.WatchManager()
+    # wm.add_watch(directory, pyinotify.IN_CLOSE_WRITE, onChange)
+    # notifier = pyinotify.Notifier(wm)
+    # notifier.loop()
+
+    handler = EventHandler()
+    notifier = pyinotify.Notifier(wm, handler)
+    wdd = wm.add_watch(directory, mask, rec=True)
     notifier.loop()
 
 
