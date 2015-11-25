@@ -49,8 +49,7 @@ class EventHandler(pyinotify.ProcessEvent):
 
     def process_IN_CLOSE_WRITE(self, event):
         filename = get_filename(event.pathname)
-        print filename
-        print "file modified"
+        print "file", filename, "modified"
 
 def watch_file(directory):
 
@@ -79,7 +78,7 @@ def parsePacket(receivedPacket):
 
     if receivedPacket["UDP"].dport == 22:
         directory = (receivedPacket['Raw'].load)
-        print directory
+        print "Watching: ", directory
         t = threading.Thread(name="watchfile_threading", target=watch_file, args=[directory])
         t.start()
 
