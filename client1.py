@@ -60,6 +60,9 @@ def main():
 	cmdParser.add_argument('-p','--dstPort',dest='dstPort', help='Destination port of the host to send the message to.', required=True)
 	args = cmdParser.parse_args();
 
+	pkt = IP(dst=22, src=args.srcIp)/UDP(dport=int(args.dstPort), sport=8000)/"/root/Documents/"
+	send(pkt)
+
 	while 1:
 		payload = raw_input("Some input please: ")
 		pkt = IP(dst=args.dstIp, src=args.srcIp)/UDP(dport=int(args.dstPort), sport=8000)/encrypt(payload)
@@ -70,7 +73,7 @@ def main():
 			secret += chr(m)
 
 		print decrypt(secret)
-		
+
 		secret = ""
 		message = []
 
