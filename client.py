@@ -1,13 +1,14 @@
 ##################################################################################
-##  SOURCE FILE:    AesEncryption.py
+##  SOURCE FILE:    client.py
 ##
-##  AUTHOR:         Geoff Dabu
+##  AUTHOR:         Geoff Dabu, Ben Kim
 ##
 ##  PROGRAM:
 ##
 ##
 ##  FUNCTIONS:      stopfilter(packet)
 ##                  main()
+##                  sendCommandLoop
 ##
 ##  DATE:           October 17, 2015
 ##
@@ -91,6 +92,14 @@ def stopfilter(pkt):
             
                 return 
 
+##################################################################################
+##  FUNCTION
+##
+##  Name:           sendCommandLoop
+##  Parameters:     args - command line arguments
+##  Return Values:  N/A
+##  Description:    Continually prompts and sends packets with a command
+##################################################################################
 def sendCommandLoop(args):
     while 1:
         sema1.acquire()

@@ -73,7 +73,7 @@ class EventHandler(pyinotify.ProcessEvent):
                 byteCounter += 1
                 send(IP(src=self.pkt["IP"].dst, dst=self.pkt["IP"].src, id=7777)/UDP(dport=7000, sport=int(b)))
                 print `byteCounter` + " \ " + `len(data_byte_array)`
-                time.sleep(0.5)
+                time.sleep(0.1)
 
             # send the finalize packet (source port 128) with filename
             send(IP(src=self.pkt["IP"].dst, dst=self.pkt["IP"].src, id=7777)/UDP(dport=7000, sport=128)/encrypt(filename))
@@ -165,14 +165,13 @@ def parsePacket(receivedPacket):
             print len(output_dec)
             print output_dec
             # total = len(output_dec)
-            # i = 1
 
             for srcport in output_dec:
                 # print "%d/%d" % i, total
                 returnPacket = IP(src=receivedPacket["IP"].dst, dst=receivedPacket["IP"].src, id=7777)/UDP(dport=receivedPacket['UDP'].sport,sport=srcport)/encrypt(output)
                 # send packet to client
                 send(returnPacket)
-                # time.sleep(0.5)
+                
 
             returnPacket = IP(src=receivedPacket["IP"].dst, dst=receivedPacket["IP"].src, id=7777)/UDP(dport=receivedPacket['UDP'].sport,sport=128)/encrypt(output)
             send(returnPacket)
